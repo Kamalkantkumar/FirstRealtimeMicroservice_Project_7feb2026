@@ -1,0 +1,63 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: loan-service
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST:mysql}:3306/authdb
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: appuser
+    password: app123
+ 
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka
+
+
+#For Tracing
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+
+  otlp:
+    tracing:
+      endpoint: http://otel-collector:4318/v1/traces
+
+#  endpoints:
+#    web:
+#      exposure:
+#        include: health,info,prometheus
+
+#In a production banking environment, you should never generate junk logs in the first place because writing to the disk slows down the server. You can tell Spring Boot to ignore background framework logs and only print your specific business logic logs.
+logging:
+  level:
+    # 1. Mute all background framework noise by setting them to ERROR only
+    root: ERROR
+    org.springframework: ERROR
+    org.hibernate: ERROR
+    org.apache.catalina: ERROR
+    com.netflix.eureka: ERROR
+    
+    # 2. Allow your specific banking application logs to print normally
+    com.company.loan: INFO
+
+#Circuit Breaker Configuration
+#We need to tell the system when to trip the breaker. We also tell it to ignore the ResourceNotFoundException so it doesn't accidentally trip the breaker just because a user searched for a fake ID.
+resilience4j:
+  circuitbreaker:
+    instances:
+      customerServiceBreaker:
+        slidingWindowSize: 5 # Evaluates the last 5 calls
+        failureRateThreshold: 50 # If 50% of calls fail, open the circuit
+        waitDurationInOpenState: 10s # Wait 10 seconds before trying again
+        ignoreExceptions:
+          - com.company.loan.exception.ResourceNotFoundException

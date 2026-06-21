@@ -1,0 +1,183 @@
+#version: '3.8'
+
+services:
+
+  mysql:
+    image: mysql:8.3
+    container_name: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: authdb
+      MYSQL_USER: appuser
+      MYSQL_PASSWORD: app123
+    ports:
+      - "3306:3306"
+    mem_limit: 600m
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -proot"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - bank-network
+
+  discovery-server:
+    build: ../discovery-server_Eureka
+    image: discovery-server:latest
+    container_name: discovery-server
+    restart: always
+    ports:
+      - "8761:8761"
+    mem_limit: 300m
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8761 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
+    networks:
+      - bank-network
+
+  auth-service:
+    build: ../auth-service
+    image: auth-service:latest
+    container_name: auth-service
+    restart: always
+    ports:
+      - "8084:8084"
+    mem_limit: 350m
+    environment:
+      - DB_HOST=mysql
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+    depends_on:
+      mysql:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+    networks:
+      - bank-network
+
+  customer-service:
+    build: ../customer-service
+    image: customer-service:latest
+    container_name: customer-service
+    restart: always
+    ports:
+      - "8081:8081"
+    mem_limit: 350m
+    environment:
+      - DB_HOST=mysql
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+    depends_on:
+      mysql:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+    networks:
+      - bank-network
+
+  loan-service:
+    build: ../loan-service
+    image: loan-service:latest
+    container_name: loan-service
+    restart: always
+    ports:
+      - "8082:8082"
+    mem_limit: 350m
+    environment:
+      - DB_HOST=mysql
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+    depends_on:
+      mysql:
+        condition: service_healthy
+      discovery-server:
+        condition: service_started
+    networks:
+      - bank-network
+
+  api-gateway:
+    build: ../api-gateway
+    image: api-gateway:latest
+    container_name: api-gateway
+    restart: always
+    ports:
+      - "8080:8080"
+    mem_limit: 250m
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+    depends_on:
+      discovery-server:
+        condition: service_started
+#      auth-service:
+#        condition: service_started
+#      customer-service:
+#        condition: service_started
+#      loan-service:
+#        condition: service_started
+    networks:
+      - bank-network
+
+#Ashok IT - Grafana Tempo for Distributed Tracing
+  tempo:
+    image: grafana/tempo:2.2.0
+    container_name: tempo
+    command: ["-config.file=/etc/tempo.yml"]
+    volumes:
+      - ./tempo.yml:/etc/tempo.yml
+      - ./tempo-data:/tmp/tempo
+    ports:
+      - "3200:3200"
+#      - "4317:4317"
+    mem_limit: 200m
+    restart: always
+    networks:
+      - bank-network
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    ports:
+      - "4001:3000"
+    mem_limit: 150m
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - bank-network
+
+# Ashok IT - OpenTelemetry Collector
+# Collects traces from microservices and forwards to Tempo
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector-config.yml"]
+    volumes:
+      - ./otel-collector-config.yml:/etc/otel-collector-config.yml
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    mem_limit: 150m
+    restart: always
+    depends_on:
+      tempo:
+        condition: service_started
+    networks:
+      - bank-network
+
+
+networks:
+  bank-network:
+    driver: bridge
+
+# 👇 THIS WAS MISSING
+volumes:
+  mysql-data:
+  grafana-data:

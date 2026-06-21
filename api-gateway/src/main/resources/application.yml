@@ -1,0 +1,35 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+#Gateway Configuration
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true #Gateway automatically creates routes for all services.
+
+#Eureka Configuration
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka
+
+#For tracing
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+
+  otlp:
+    tracing:
+      endpoint: http://otel-collector:4318/v1/traces
+
+#  endpoints:
+#    web:
+#      exposure:
+#        include: health,info,prometheus

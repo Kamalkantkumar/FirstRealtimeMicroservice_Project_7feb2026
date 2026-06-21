@@ -1,0 +1,27 @@
+# Ashok IT - Grafana Tempo Configuration
+# Tempo stores distributed tracing data from microservices
+
+server:
+  http_listen_port: 3200
+#  grpc_listen_port: 4317
+
+distributor:
+  receivers:
+    # Enable OTLP receiver for OpenTelemetry
+    otlp:
+      protocols:
+        grpc:
+        http:
+
+#ingester:
+#  max_block_duration: 5m
+
+#compactor:
+#  compaction:
+#    block_retention: 1h
+
+storage:
+  trace:
+    backend: local
+    local:
+      path: /tmp/tempo

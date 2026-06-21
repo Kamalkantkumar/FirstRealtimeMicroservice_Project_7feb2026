@@ -1,0 +1,90 @@
+version: "3.9"
+
+services:
+
+  # ------------------------------
+  # Observability
+  # ------------------------------
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.98.0
+    container_name: otel-collector
+    command: ["--config=/etc/otel-collector.yml"]
+    volumes:
+      - ./otel/otel-collector.yml:/etc/otel-collector.yml
+    ports:
+      - "4318:4318"
+    depends_on:
+      - tempo
+
+  tempo:
+    image: grafana/tempo:2.4.1
+    container_name: tempo
+    command: ["-config.file=/etc/tempo.yml"]
+    volumes:
+      - ./tempo/tempo.yml:/etc/tempo.yml
+    ports:
+      - "3200:3200"
+
+  prometheus:
+    image: prom/prometheus:v2.51.1
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  loki:
+    image: grafana/loki:2.9.4
+    container_name: loki
+    command: -config.file=/etc/loki/loki.yml
+    volumes:
+      - ./loki/loki.yml:/etc/loki/loki.yml
+    ports:
+      - "3100:3100"
+
+  promtail:
+    image: grafana/promtail:2.9.4
+    container_name: promtail
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./promtail/promtail.yml:/etc/promtail/promtail.yml
+    command: -config.file=/etc/promtail/promtail.yml
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:10.3.1
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - tempo
+      - prometheus
+      - loki
+
+
+  # ------------------------------
+  # Your microservices
+  # ------------------------------
+
+  api-gateway:
+    image: api-gateway:latest
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - otel-collector
+
+  customer-service:
+    image: customer-service:latest
+    container_name: customer-service
+    depends_on:
+      - otel-collector
+
+  loan-service:
+    image: loan-service:latest
+    container_name: loan-service
+    depends_on:
+      - otel-collector

@@ -1,0 +1,15 @@
+# IDE specific folders
+.idea/
+.vscode/
+*.eclipse/
+*.sts/
+.metadata/
+
+# Maven compiled output
+**/target/
+*.jar
+*.war
+
+# Environment & Secrets (NEVER push these)
+*.env
+application-local.yml
