@@ -13,7 +13,7 @@ public class DiscoveryServerEurekaApplication {
 	}
 
 }
-
+//kama
 /*
 http://localhost:8761
 

@@ -1,37 +1,15 @@
-server:
-  port: 8084
-
+# ===================================================================
+# AUTH SERVICE - LOCAL BOOTSTRAP INITIALIZER
+# ===================================================================
 spring:
   application:
+    # 1. This EXACTLY matches the GitHub file name prefix
     name: auth-service
 
-  datasource:
-    url: jdbc:mysql://${DB_HOST:mysql}:3306/authdb
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: appuser
-    password: app123
+  profiles:
+    # 2. Tells the Config Server to grab 'auth-service-dev.yml'
+    active: dev
 
-  datasource.hikari:
-    connection-timeout: 30000
-    maximum-pool-size: 10
-
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    database-platform: org.hibernate.dialect.MySQLDialect
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://discovery-server:8761/eureka
-
-#For Tracing
-management:
-  tracing:
-    sampling:
-      probability: 1.0
-
-  otlp:
-    tracing:
-      endpoint: http://otel-collector:4318/v1/traces
+  config:
+    # 3. Instructs Spring to pause boot and download settings from port 8888
+    import: "optional:configserver:http://localhost:8888"
