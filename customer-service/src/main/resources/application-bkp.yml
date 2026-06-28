@@ -1,0 +1,81 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: customer-service
+
+  datasource:
+    url: jdbc:mysql://${DB_HOST:mysql}:3306/authdb
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: appuser
+    password: app123
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true 
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka
+    registry-fetch-interval-seconds: 10
+
+#Without this, Feign exceptions may bypass CircuitBreaker.
+feign:
+  circuitbreaker:
+    enabled: true
+
+#Regillence4J
+
+resilience4j:
+
+  circuitbreaker:
+    instances:
+      loanService:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+
+  retry:
+    instances:
+      loanService:
+        maxAttempts: 3
+        waitDuration: 2s
+
+  ratelimiter:
+    instances:
+      loanService:
+        limitForPeriod: 5
+        limitRefreshPeriod: 10s
+        timeoutDuration: 2s
+
+#For Tracing
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+
+  otlp:
+    tracing:
+      endpoint: http://otel-collector:4318/v1/traces
+
+#  endpoints:
+#    web:
+#      exposure:
+#        include: health,info,prometheus
+
+#In a production banking environment, you should never generate junk logs in the first place because writing to the disk slows down the server. You can tell Spring Boot to ignore background framework logs and only print your specific business logic logs.
+logging:
+  level:
+    # 1. Mute all background framework noise by setting them to ERROR only
+    root: ERROR
+    org.springframework: ERROR
+    org.hibernate: ERROR
+    org.apache.catalina: ERROR
+    com.netflix.eureka: ERROR
+    
+    # 2. Allow your specific banking application logs to print normally
+    com.company.loan: INFO
