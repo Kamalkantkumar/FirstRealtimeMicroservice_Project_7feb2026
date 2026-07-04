@@ -14,7 +14,11 @@ spring:
           # 👇 YOU MUST ADD THESE TWO LINES FOR PRIVATE REPOSITORIES
           username: Kamalkantkumar
           # 👇 Paste the Personal Access Token (PAT) here!-04-july-2026
-          password: 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
+<<<<<<< HEAD
+          password:
+=======
+          password: #
+>>>>>>> 9dd50cb (feat(logging): implement structured JSON logging and file-based rotation)
           # If your repository is Private, you MUST provide your GitHub credentials here
           # username: your-github-email@gmail.com
           # password: your-github-personal-access-token
