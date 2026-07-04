@@ -5,10 +5,21 @@
 *.sts/
 .metadata/
 
-# Maven compiled output
-**/target/
+# IDE Folders
+*.iml
+
+# Compiled class files and Maven targets
+target/
+*.class
 *.jar
 *.war
+
+# Log files
+*.log
+
+# Docker/Tempo data volumes
+tempo-data/
+grafana-data/
 
 # Environment & Secrets (NEVER push these)
 *.env

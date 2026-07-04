@@ -1,9 +1,7 @@
-version: '3.8'
+#version: '3.8'
 
 services:
-  # ---------------------------------------------------------
-  # LAYER 1: FOUNDATION (Database & Discovery)
-  # ---------------------------------------------------------
+
   mysql:
     image: mysql:8.3
     container_name: mysql
@@ -34,12 +32,9 @@ services:
     restart: always
     ports:
       - "8761:8761"
-    deploy:
-      resources:
-        limits:
-          memory: 300M
+    mem_limit: 300m
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8761/actuator/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8761 || exit 1"]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -47,34 +42,6 @@ services:
     networks:
       - bank-network
 
-  # ---------------------------------------------------------
-  # LAYER 2: CONFIGURATION VAULT
-  # ---------------------------------------------------------
-  config-server:
-    build: ../spring-cloud-config
-    image: config-server:latest
-    container_name: config-server
-    restart: always
-    ports:
-      - "8888:8888"
-    mem_limit: 350m
-    environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
-    depends_on:
-      discovery-server:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:8888/actuator/health || exit 1"]
-      interval: 15s
-      timeout: 10s
-      retries: 10
-      start_period: 40s
-    networks:
-      - bank-network
-
-  # ---------------------------------------------------------
-  # LAYER 3: BUSINESS MICROSERVICES
-  # ---------------------------------------------------------
   auth-service:
     build: ../auth-service
     image: auth-service:latest
@@ -87,14 +54,11 @@ services:
       - DB_HOST=mysql
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
-      # 👇 CRITICAL: Tell the service to wait for and connect to the Config Server
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - SPRING_PROFILES_ACTIVE=dev
     depends_on:
       mysql:
         condition: service_healthy
-      config-server:
-        condition: service_healthy
+      discovery-server:
+        condition: service_started
     networks:
       - bank-network
 
@@ -110,13 +74,11 @@ services:
       - DB_HOST=mysql
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - SPRING_PROFILES_ACTIVE=dev
     depends_on:
       mysql:
         condition: service_healthy
-      config-server:
-        condition: service_healthy
+      discovery-server:
+        condition: service_started
     networks:
       - bank-network
 
@@ -132,13 +94,11 @@ services:
       - DB_HOST=mysql
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - SPRING_PROFILES_ACTIVE=dev
     depends_on:
       mysql:
         condition: service_healthy
-      config-server:
-        condition: service_healthy
+      discovery-server:
+        condition: service_started
     networks:
       - bank-network
 
@@ -153,17 +113,19 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - SPRING_PROFILES_ACTIVE=dev
     depends_on:
-      config-server:
-        condition: service_healthy
+      discovery-server:
+        condition: service_started
+#      auth-service:
+#        condition: service_started
+#      customer-service:
+#        condition: service_started
+#      loan-service:
+#        condition: service_started
     networks:
       - bank-network
 
-  # ---------------------------------------------------------
-  # LAYER 4: OBSERVABILITY (Grafana / Tempo / OTEL)
-  # ---------------------------------------------------------
+#Ashok IT - Grafana Tempo for Distributed Tracing
   tempo:
     image: grafana/tempo:2.2.0
     container_name: tempo
@@ -173,6 +135,7 @@ services:
       - ./tempo-data:/tmp/tempo
     ports:
       - "3200:3200"
+#      - "4317:4317"
     mem_limit: 200m
     restart: always
     networks:
@@ -188,6 +151,9 @@ services:
       - grafana-data:/var/lib/grafana
     networks:
       - bank-network
+
+# Ashok IT - OpenTelemetry Collector
+# Collects traces from microservices and forwards to Tempo
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib
@@ -206,10 +172,12 @@ services:
     networks:
       - bank-network
 
+
 networks:
   bank-network:
     driver: bridge
 
+# 👇 THIS WAS MISSING
 volumes:
   mysql-data:
   grafana-data:
