@@ -15,7 +15,7 @@ spring:
           username: Kamalkantkumar
           # 👇 Paste the Personal Access Token (PAT) here!-04-july-2026
 
-          password:
+          password: ${GITHUB_TOKEN}
           # If your repository is Private, you MUST provide your GitHub credentials here
           # username: your-github-email@gmail.com
           # password: your-github-personal-access-token
