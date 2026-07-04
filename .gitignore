@@ -5,6 +5,17 @@
 *.sts/
 .metadata/
 
+# Log files
+logs/
+logs-data/
+
+# IDE files
+.idea/
+*.iml
+
+# Docker/Build files
+target/
+*.log
 # IDE Folders
 *.iml
 

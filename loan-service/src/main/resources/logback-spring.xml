@@ -1,13 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <!-- We will map this internal /logs directory to your host machine -->
+    <property name="LOG_DIR" value="/logs" />
+
+    <!-- Console Appender -->
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>
-                %d{yyyy-MM-dd HH:mm:ss} %-5level [%X{traceId},%X{spanId}] %logger - %msg%n
-            </pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <root level="INFO">
-        <appender-ref ref="STDOUT"/>
+    <!-- Use the service name defined in application.yml for the filename -->
+    <springProperty scope="context" name="APP_NAME" source="spring.application.name"/>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- Generates: /logs/loan-service.log (for loan-service) -->
+        <file>${LOG_DIR}/${APP_NAME}.log</file>
+
+        <!-- Only capture ERROR, WARN, and specific FAILURE logs to keep files clean -->
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!-- Files rotate daily and when they hit 10MB to prevent disk overflow -->
+            <fileNamePattern>${LOG_DIR}/archived/${APP_NAME}-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!-- Set root level to WARN so INFO/DEBUG logs don't clutter your error files -->
+    <root level="WARN">
+        <appender-ref ref="FILE" />
+        <appender-ref ref="RollingFile" />
     </root>
 </configuration>

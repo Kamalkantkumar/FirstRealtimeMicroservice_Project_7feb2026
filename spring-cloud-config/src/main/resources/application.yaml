@@ -13,8 +13,8 @@ spring:
           default-label: main
           # 👇 YOU MUST ADD THESE TWO LINES FOR PRIVATE REPOSITORIES
           username: Kamalkantkumar
-          # 👇 Paste the Personal Access Token (PAT) here!
-          password: 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
+          # 👇 Paste the Personal Access Token (PAT) here!-04-july-2026
+          password: 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
           # If your repository is Private, you MUST provide your GitHub credentials here
           # username: your-github-email@gmail.com
           # password: your-github-personal-access-token

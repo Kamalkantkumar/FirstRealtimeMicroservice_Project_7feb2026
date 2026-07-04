@@ -34,6 +34,10 @@ services:
     restart: always
     ports:
       - "8761:8761"
+    volumes:
+      - ./logs:/logs
+    environment:
+      - SPRING_APPLICATION_NAME=discovery-server # for Logging
     deploy:
       resources:
         limits:
@@ -57,9 +61,12 @@ services:
     restart: always
     ports:
       - "8888:8888"
+    volumes:
+      - ./logs:/logs
     mem_limit: 350m
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
+      - SPRING_APPLICATION_NAME=config-server # for logging
     depends_on:
       discovery-server:
         condition: service_healthy
@@ -82,6 +89,8 @@ services:
     restart: always
     ports:
       - "8084:8084"
+    volumes:
+      - ./logs:/logs
     mem_limit: 350m
     environment:
       - DB_HOST=mysql
@@ -90,6 +99,7 @@ services:
       # 👇 CRITICAL: Tell the service to wait for and connect to the Config Server
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_APPLICATION_NAME=auth-service # for logging
     depends_on:
       mysql:
         condition: service_healthy
@@ -105,6 +115,8 @@ services:
     restart: always
     ports:
       - "8081:8081"
+    volumes:
+      - ./logs:/logs # Docker creates loan-service.log and customer-service.log here
     mem_limit: 350m
     environment:
       - DB_HOST=mysql
@@ -112,6 +124,7 @@ services:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_APPLICATION_NAME=customer-service # for logging
     depends_on:
       mysql:
         condition: service_healthy
@@ -127,6 +140,8 @@ services:
     restart: always
     ports:
       - "8082:8082"
+    volumes:
+      - ./logs:/logs # All services mount to the SAME local folder
     mem_limit: 350m
     environment:
       - DB_HOST=mysql
@@ -134,6 +149,7 @@ services:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_APPLICATION_NAME=loan-service # for logging
     depends_on:
       mysql:
         condition: service_healthy
@@ -149,12 +165,15 @@ services:
     restart: always
     ports:
       - "8080:8080"
+    volumes:
+      - ./logs:/logs
     mem_limit: 250m
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://discovery-server:8761/eureka
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_APPLICATION_NAME=api-gateway # for logging
     depends_on:
       config-server:
         condition: service_healthy
